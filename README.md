@@ -2,7 +2,28 @@
 
 This repository contains code for the paper "*Lossless Compression of Deep Neural Networks: A High-dimensional Neural Tangent Kernel Approach*" submitted to NeurIPS 2022.
 
+## 
 ## About the code
+
+We packed the code into three different folders--compression, spectral_characteristics, utils:
+-compression
+ -we perform compression on two Dataset: MNIST, CIFAR10;
+-spectral_characteristics
+-utils
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 - *baselines.py* contains code for baseline transfer learning methods, including TCA[^1], JDA[^2], and CORAL[^3].
 - *DaNN.py* contains code for DaNN[^4].
