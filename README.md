@@ -1,43 +1,36 @@
 # Lossless Compression(An NTK based method)
 
-This repository contains code for the paper "*Lossless Compression of Deep Neural Networks: A High-dimensional Neural Tangent Kernel Approach*" submitted to NeurIPS 2022.
+This repository contains code for the paper "*Lossless Compression of Deep Neural Networks: A High-dimensional Neural Tangent Kernel Approach*"[^1] submitted to NeurIPS 2022.
 
 ## 
 ## About the code
 
 We packed the code into three different folders--compression, spectral_characteristics, utils:
--compression
- -we perform compression on two Dataset: MNIST, CIFAR10;
--spectral_characteristics
--utils
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-- *baselines.py* contains code for baseline transfer learning methods, including TCA[^1], JDA[^2], and CORAL[^3].
-- *DaNN.py* contains code for DaNN[^4].
-- *GFK.py* contains code for GFK[^5].
-- *main.py* is the main file for the proposed RF-TCA approach.
-- *-classifier* directory contains the different classifiers used in the paper.
-- *-utils* directory contains functions to process data and files.
-- Other files are functions used in main files *main.py*:
-	- *TCA.py* contains code for the proposed R-TCA and RF-TCA; and 
-	- *RandomF.py* contains code for random features.
-- Some of them are forked from [Jindong Wang's transfer learning repository](https://github.com/jindongwang/transferlearning).
+- compression : We perform compression on two Dataset: MNIST, CIFAR10(experiment 2)
+ - mnist
+  - mnist_origin.py (Classification performance of the original neural network on MNIST)
+  - performance_match.py (Classification performance of the compressed neural network compressed by our NTK-LC on MNIST)
+ - cifar10
+  - vgg_net_cifar10.py (Define VGG19 used for CIFAR10)
+  - vgg_train.py (Train VGG19 defined in vgg_net_cifar10.py on CIFAR10, and get parameters for convolution layers, which will be used for feature extraction)
+  - performance_origin.py (Classification performance of the original neural network on CIFAR10)
+  - performance_two.py (Classification performance of the compressed neural network compressed by our NTK-LC on CIFAR10)
+- spectral_characteristics : (experiment 1)
+ - tilde_CK.py (Verify the consistency of theoretical and practical conjugate kernel(CK) spectrum distribution)
+ - plot_eigen.py (Plot eigenvalues and eigen vectors)
+- utils : some utils
+ - activation_numpy.py (Activations define)
+ - activation_tensor.py (Activations define)
+ - data_prepare.py (Data prepare, including data sampled from MNIST/CIFAR10 and generated GMM data)
+ - expect_calculate.py (expect calculated by numerical integration)
+ - expect_calculate_math.py (expect calculated with analytical expresion)
+ - model.py (model define)
+ - solve_equation.py (solve equation to define activation functions)
+ - utils.py (some more utils)
 
 ## Dependencies
 
+'''bash
 To be able to test this code requires the following:
 
 * [Python](https://www.python.org/): tested with version 3.6.13
@@ -50,4 +43,4 @@ To be able to test this code requires the following:
 ## Reference
 
 
-[^1]: Pan S J, Tsang I W, Kwok J T, et al. [Domain adaptation via transfer component analysis](https://ieeexplore.ieee.org/abstract/document/5640675)[J]. IEEE transactions on neural networks, 2010, 22(2): 199-210.
+[^1]: 
