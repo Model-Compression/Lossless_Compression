@@ -47,15 +47,14 @@ or you can install follwing basic packages yourself:
 * [Pandas](https://pandas.pydata.org/) for data record
 
 ## Discription of NTK-LC
-Modern deep neural networks (DNNs) are extremely powerful; however, this comes at the price of increased depth and having more parameters per layer, making their training and inference more computationally challenging. 
-In an attempt to address this key limitation, efforts have been devoted to the compression (e.g., sparsification and/or quantization) of these large-scale machine learning models, so that they can be deployed on low-power IoT devices.
-In this paper, building upon recent research advances in neural tangent kernel (NTK) and random matrix theory, we provide a novel compression approach to wide and fully-connected *deep* neural nets. 
-Specifically, we demonstrate that in the high-dimensional regime where the number of data points $n$ and their dimension $p$ are both large, and under a Gaussian mixture model for the data, there exists *asymptotic spectral equivalence* between the NTK matrices for a large family of DNN models.
-This theoretical result enables ``lossless'' compression of a given DNN to be performed, in the sense that the compressed network yields asymptotically the same NTK as the original (dense and unquantized) network, with its weights and activations taking values *only* in { 0, 1, -1} up to a scaling. 
-Experiments on both synthetic and real-world data are conducted to support the numerical advantages of the proposed method.
+
+Building upon recent research advances in neural tangent kernel (NTK) and random matrix theory, we provide a novel compression approach to wide and fully-connected *deep* neural nets. 
+
+The most related work is[^2] , The difference is that this article works in the single-hidden-layer setting, while ours works in multi-layer fully-connected DNN setting.
 
 
 ## Reference
 
 
-[^1]: 
+[^1] : 
+[^2] : Ali H T, Liao Z, Couillet R. Random matrices in service of ML footprint: ternary random features with no performance loss[J]. arXiv preprint arXiv:2110.01899, 2021.[link](https://arxiv.org/abs/2110.01899)
