@@ -4,9 +4,9 @@ This repository contains code for the paper "*Lossless Compression of Deep Neura
 
 ## 
 ## About the code
-<details>
+
 We packed the code into three different folders--compression, spectral_characteristics, utils:
-- compression : We perform compression on two Dataset: MNIST, CIFAR10(experiment 2)
+- compression : <details><summary>description</summary>We perform compression on two Dataset: MNIST, CIFAR10(experiment 2)</details>
   - mnist
     - mnist_origin.py (Classification performance of the original neural network on MNIST)
     - performance_match.py (Classification performance of the compressed neural network compressed by our NTK-LC on MNIST)
@@ -27,7 +27,7 @@ We packed the code into three different folders--compression, spectral_character
   - model.py (model define)
   - solve_equation.py (solve equation to define activation functions)
   - utils.py (some more utils)
-</details>
+
 ## Dependencies
 
 '''bash
