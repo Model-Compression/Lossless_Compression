@@ -34,9 +34,9 @@ We packed the code into three different folders--compression, spectral_character
 ## Dependencies
 
 You can run following bash command to install packages used in this repository
-'''bash
+```bash
 pip install requirments.txt
-'''
+```
 
 or you can install follwing basic packages yourself:
 
