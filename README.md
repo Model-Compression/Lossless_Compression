@@ -10,6 +10,7 @@ We packed the code into three different folders--compression, spectral_character
 - **compression** : (experiment 2)
   - **mnist**
     - mnist_origin.py 
+    
     *(Classification performance of the original neural network on MNIST)*
     - performance_match.py 
     *(Classification performance of the compressed neural network compressed by our NTK-LC on MNIST)*
