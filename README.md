@@ -56,6 +56,6 @@ The most related work is [^2] , The difference is that this article works in the
 ## Reference
 
 
-[^1] : Gu L, Du Y, Zhang Y, et al. Lossless Compression of Deep Neural Networks: A High-dimensional Neural Tangent Kernel Approach[J].
+[^1]: Gu L, Du Y, Zhang Y, et al. Lossless Compression of Deep Neural Networks: A High-dimensional Neural Tangent Kernel Approach[J].
 
-[^2] : Ali H T, Liao Z, Couillet R. Random matrices in service of ML footprint: ternary random features with no performance loss[J]. arXiv preprint arXiv:2110.01899, 2021.[link](https://arxiv.org/abs/2110.01899)
+[^2]: Ali H T, Liao Z, Couillet R. Random matrices in service of ML footprint: ternary random features with no performance loss[J]. arXiv preprint arXiv:2110.01899, 2021.[link](https://arxiv.org/abs/2110.01899)
