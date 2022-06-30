@@ -59,7 +59,7 @@ or you can install follwing basic packages yourself:
 * [Python](https://www.python.org/): tested with version 3.8.13
 * [Numpy](http://www.numpy.org/) and [Scipy](https://www.scipy.org/)
 * [Matplotlib](http://matplotlib.org/) for visulazation
-* [Pytorch](https://pytorch.org/): tested with version 1.10.0
+* [Pytorch](https://pytorch.org/): tested with version 1.12.0
 * [Pandas](https://pandas.pydata.org/) for data record
 
 ## Discription of NTK-LC
