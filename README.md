@@ -1,6 +1,6 @@
 # Lossless Compression(An NTK based method)
 
-This repository contains code for the paper "*Lossless Compression of Deep Neural Networks: A High-dimensional Neural Tangent Kernel Approach*"(**NTK-LC**)[^1] submitted to NeurIPS 2022.
+This repository contains code for the paper "*Lossless Compression of Deep Neural Networks: A High-dimensional Neural Tangent Kernel Approach*"(**NTK-LC**) [^1] submitted to NeurIPS 2022.
 
 ## 
 ## About the code
@@ -50,7 +50,7 @@ or you can install follwing basic packages yourself:
 
 Building upon recent research advances in neural tangent kernel (NTK) and random matrix theory, we provide a novel compression approach to wide and fully-connected *deep* neural nets. 
 
-The most related work is[^2] , The difference is that this article works in the single-hidden-layer setting, while ours works in multi-layer fully-connected DNN setting.
+The most related work is [^2] , The difference is that this article works in the single-hidden-layer setting, while ours works in multi-layer fully-connected DNN setting.
 
 
 ## Reference
