@@ -6,19 +6,19 @@ This repository contains code for the paper "*Lossless Compression of Deep Neura
 ## About the code
 
 We packed the code into three different folders--compression, spectral_characteristics, utils:
-- compression : <details><summary>description</summary>We perform compression on two Dataset: MNIST, CIFAR10(experiment 2)</details>
-  - mnist
+- **compression** : We perform compression on two Dataset: MNIST, CIFAR10(experiment 2)
+  - **mnist**
     - mnist_origin.py (Classification performance of the original neural network on MNIST)
     - performance_match.py (Classification performance of the compressed neural network compressed by our NTK-LC on MNIST)
-  - cifar10
+  - **cifar10**
     - vgg_net_cifar10.py (Define VGG19 used for CIFAR10)
     - vgg_train.py (Train VGG19 defined in vgg_net_cifar10.py on CIFAR10, and get parameters for convolution layers, which will be used for feature extraction)
     - performance_origin.py (Classification performance of the original neural network on CIFAR10)
     - performance_two.py (Classification performance of the compressed neural network compressed by our NTK-LC on CIFAR10)
-- spectral_characteristics : (experiment 1)
+- **spectral_characteristics** : (experiment 1)
   - tilde_CK.py (Verify the consistency of theoretical and practical conjugate kernel(CK) spectrum distribution)
   - plot_eigen.py (Plot eigenvalues and eigen vectors)
-- utils : some utils
+- **utils** : some utils
   - activation_numpy.py (Activations define)
   - activation_tensor.py (Activations define)
   - data_prepare.py (Data prepare, including data sampled from MNIST/CIFAR10 and generated GMM data)
