@@ -1,13 +1,13 @@
 # Lossless Compression(An NTK based method)
 
-This repository contains code for the paper "*Lossless Compression of Deep Neural Networks: A High-dimensional Neural Tangent Kernel Approach*"[^1] submitted to NeurIPS 2022.
+This repository contains code for the paper "*Lossless Compression of Deep Neural Networks: A High-dimensional Neural Tangent Kernel Approach*"(**NTK-LC**)[^1] submitted to NeurIPS 2022.
 
 ## 
 ## About the code
 
 We packed the code into three different folders--compression, spectral_characteristics, utils:
 
-- **compression** : We perform compression on two Dataset: MNIST, CIFAR10(experiment 2)
+- **compression** : (experiment 2)
   - **mnist**
     - mnist_origin.py (Classification performance of the original neural network on MNIST)
     - performance_match.py (Classification performance of the compressed neural network compressed by our NTK-LC on MNIST)
@@ -45,6 +45,15 @@ or you can install follwing basic packages yourself:
 * [Matplotlib](http://matplotlib.org/) for visulazation
 * [Pytorch](https://pytorch.org/): tested with version 1.10.0
 * [Pandas](https://pandas.pydata.org/) for data record
+
+## Discription of NTK-LC
+Modern deep neural networks (DNNs) are extremely powerful; however, this comes at the price of increased depth and having more parameters per layer, making their training and inference more computationally challenging. 
+In an attempt to address this key limitation, efforts have been devoted to the compression (e.g., sparsification and/or quantization) of these large-scale machine learning models, so that they can be deployed on low-power IoT devices.
+In this paper, building upon recent research advances in neural tangent kernel (NTK) and random matrix theory, we provide a novel compression approach to wide and fully-connected *deep* neural nets. 
+Specifically, we demonstrate that in the high-dimensional regime where the number of data points $n$ and their dimension $p$ are both large, and under a Gaussian mixture model for the data, there exists *asymptotic spectral equivalence* between the NTK matrices for a large family of DNN models.
+This theoretical result enables ``lossless'' compression of a given DNN to be performed, in the sense that the compressed network yields asymptotically the same NTK as the original (dense and unquantized) network, with its weights and activations taking values *only* in { 0, 1, -1} up to a scaling. 
+Experiments on both synthetic and real-world data are conducted to support the numerical advantages of the proposed method.
+
 
 ## Reference
 
