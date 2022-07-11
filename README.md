@@ -5,7 +5,7 @@ This repository contains code to reproduces the results in the paper "*Lossless 
 ## About the code
 
 * `code/compression` contains
-  * `code/compression/mist`
+  * `code/compression/mnist`
     * **mnist_origin.py** for classification using original neural network on MNIST dataset
     * **performance_match.py** for classification with compressed neural network using the proposed NTK*LC approach on MNIST dataset
   * `code/compression/cifar10`
