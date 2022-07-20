@@ -52,7 +52,7 @@ or you can install follwing basic packages yourself:
 
 * Linyu Gu
   * Master at EIC, Huazhong University of Science and Tech
-  * E-mail: [lingyu_gu@hust.edu.cn](mailto:m202172384@hust.edu.cn)
+  * E-mail: [gulingyu@hust.edu.cn](mailto:m202172384@hust.edu.cn)
 
 * Yongqi Du
   * Master at EIC, Huazhong University of Science and Tech
