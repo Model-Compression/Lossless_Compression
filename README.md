@@ -44,7 +44,7 @@ or you can install follwing basic packages yourself:
 * [Pandas](https://pandas.pydata.org/) for data record
 
 
-## Contact information (This par to update!)
+## Contact information
 * Zhenyu LIAO
   * Assistant Professor at EIC, Huazhong University of Science and Tech
   * Website: [https://zhenyu-liao.github.io/](https://zhenyu-liao.github.io/)
