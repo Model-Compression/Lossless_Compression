@@ -16,7 +16,14 @@ import torchvision.datasets as dset
 from torch.utils.data import Dataset
 
 
-def gen_data(testcase, selected_target=[6, 8], T=None, p=None, cs=None, means=None, covs=None, mode='train'):
+def gen_data(testcase,
+             selected_target=[6, 8],
+             T=None,
+             p=None,
+             cs=None,
+             means=None,
+             covs=None,
+             mode='train'):
     '''Generate GMM data from existing datasets or self sampling datasets.
 
     Arguments:
@@ -42,13 +49,19 @@ def gen_data(testcase, selected_target=[6, 8], T=None, p=None, cs=None, means=No
     rng = np.random
 
     if testcase == 'MNIST':
-        root = '../data'
-        if not os.path.exists(root):
-            os.mkdir(root)
+        root = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
+            'data')
+        if not os.path.isdir(root):
+            os.makedirs(root)
         if mode == 'train':
-            mnist = dset.MNIST(root=os.path.join(root, 'train'), train=True, download=True)
+            mnist = dset.MNIST(root=os.path.join(root, 'train'),
+                               train=True,
+                               download=True)
         else:
-            mnist = dset.MNIST(root=os.path.join(root, 'test'), train=False, download=True)
+            mnist = dset.MNIST(root=os.path.join(root, 'test'),
+                               train=False,
+                               download=True)
         data, labels = mnist.data.view(mnist.data.shape[0], -1), mnist.targets
 
         # feel free to choose the number you like :)
@@ -63,16 +76,21 @@ def gen_data(testcase, selected_target=[6, 8], T=None, p=None, cs=None, means=No
         for i in selected_target:
             locate_target_train = np.where(labels == i)[0]
             data_full.append(data[locate_target_train].T)
-            data_full_matrix = np.concatenate((data_full_matrix, data[locate_target_train].T), axis=1)
+            data_full_matrix = np.concatenate(
+                (data_full_matrix, data[locate_target_train].T), axis=1)
             ind += 1
 
         # recentering and normalization to satisfy Assumption 1 and
         T_full = data_full_matrix.shape[1]
         mean_selected_data = np.mean(data_full_matrix, axis=1).reshape(p, 1)
-        norm2_selected_data = np.sum((data_full_matrix - np.mean(data_full_matrix, axis=1).reshape(p, 1))**2, (0, 1)) / T_full
+        norm2_selected_data = np.sum(
+            (data_full_matrix -
+             np.mean(data_full_matrix, axis=1).reshape(p, 1))**2,
+            (0, 1)) / T_full
         for i in range(K):
             data_full[i] = data_full[i] - mean_selected_data
-            data_full[i] = data_full[i] * np.sqrt(p) / np.sqrt(norm2_selected_data)
+            data_full[i] = data_full[i] * np.sqrt(p) / np.sqrt(
+                norm2_selected_data)
 
         # get the statistics of MNIST data
         means = []
@@ -81,7 +99,8 @@ def gen_data(testcase, selected_target=[6, 8], T=None, p=None, cs=None, means=No
             data_tmp = data_full[i]
             T_tmp = data_tmp.shape[1]
             means.append(np.mean(data_tmp.numpy(), axis=1).reshape(p, 1))
-            covs.append((data_tmp @ (data_tmp.T) / T_tmp - means[i] @ (means[i].T)).reshape(p, p))
+            covs.append((data_tmp @ (data_tmp.T) / T_tmp -
+                         means[i] @ (means[i].T)).reshape(p, p))
 
         # data for train
 
@@ -92,9 +111,12 @@ def gen_data(testcase, selected_target=[6, 8], T=None, p=None, cs=None, means=No
         ind = 0
         for i in range(K):
             data_tmp = data_full[i]
-            X = np.concatenate((X, data_tmp[:, range(int(cs[ind] * T))]), axis=1)
+            X = np.concatenate((X, data_tmp[:, range(int(cs[ind] * T))]),
+                               axis=1)
             Omega = np.concatenate(
-                (Omega, data_tmp[:, range(int(cs[ind] * T))] - np.outer(means[ind], np.ones((1, int(T * cs[ind]))))), axis=1)
+                (Omega, data_tmp[:, range(int(cs[ind] * T))] -
+                 np.outer(means[ind], np.ones((1, int(T * cs[ind]))))),
+                axis=1)
             y = np.concatenate((y, ind * np.ones(int(T * cs[ind]))))
             ind += 1
 
@@ -103,12 +125,16 @@ def gen_data(testcase, selected_target=[6, 8], T=None, p=None, cs=None, means=No
 
     elif testcase == 'CIFAR10':
         root = '../data'
-        if not os.path.exists(root):
-            os.mkdir(root)
+        if not os.path.isdir(root):
+            os.makedirs(root)
         if mode == 'train':
-            cifar = dset.CIFAR10(root=os.path.join(root, 'train'), train=True, download=True)
+            cifar = dset.CIFAR10(root=os.path.join(root, 'train'),
+                                 train=True,
+                                 download=True)
         else:
-            cifar = dset.CIFAR10(root=os.path.join(root, 'test'), train=False, download=True)
+            cifar = dset.CIFAR10(root=os.path.join(root, 'test'),
+                                 train=False,
+                                 download=True)
         data = cifar.data  # numpy
         targets = np.array(cifar.targets)  # numpy
         data, labels = data.reshape(data.shape[0], -1), targets
@@ -126,17 +152,22 @@ def gen_data(testcase, selected_target=[6, 8], T=None, p=None, cs=None, means=No
         for i in selected_target:
             locate_target_train = np.where(labels == i)[0]
             data_full.append(data[locate_target_train].T)
-            data_full_matrix = np.concatenate((data_full_matrix, data[locate_target_train].T), axis=1)
+            data_full_matrix = np.concatenate(
+                (data_full_matrix, data[locate_target_train].T), axis=1)
             ind += 1
 
         # recentering and normalization to satisfy Assumption 1 and
         # for full datasets
         T_full = data_full_matrix.shape[1]
         mean_selected_data = np.mean(data_full_matrix, axis=1).reshape(p, 1)
-        norm2_selected_data = np.sum((data_full_matrix - np.mean(data_full_matrix, axis=1).reshape(p, 1))**2, (0, 1)) / T_full
+        norm2_selected_data = np.sum(
+            (data_full_matrix -
+             np.mean(data_full_matrix, axis=1).reshape(p, 1))**2,
+            (0, 1)) / T_full
         for i in range(K):
             data_full[i] = data_full[i] - mean_selected_data
-            data_full[i] = data_full[i] * np.sqrt(p) / np.sqrt(norm2_selected_data)
+            data_full[i] = data_full[i] * np.sqrt(p) / np.sqrt(
+                norm2_selected_data)
 
         # get the statistics of CIFAR data
         # for each class
@@ -146,7 +177,8 @@ def gen_data(testcase, selected_target=[6, 8], T=None, p=None, cs=None, means=No
             data_tmp = data_full[i]
             T_tmp = data_tmp.shape[1]
             means.append(np.mean(data_tmp, axis=1).reshape(p, 1))
-            covs.append((data_tmp @ (data_tmp.T) / T_tmp - means[i] @ (means[i].T)).reshape(p, p))
+            covs.append((data_tmp @ (data_tmp.T) / T_tmp -
+                         means[i] @ (means[i].T)).reshape(p, p))
 
         # data for train
         X = np.array([]).reshape(p, 0)
@@ -158,9 +190,12 @@ def gen_data(testcase, selected_target=[6, 8], T=None, p=None, cs=None, means=No
         ind = 0
         for i in range(K):
             data_tmp = data_full[i]
-            X = np.concatenate((X, data_tmp[:, range(int(cs[ind] * T))]), axis=1)
+            X = np.concatenate((X, data_tmp[:, range(int(cs[ind] * T))]),
+                               axis=1)
             Omega = np.concatenate(
-                (Omega, data_tmp[:, range(int(cs[ind] * T))] - np.outer(means[ind], np.ones((1, int(T * cs[ind]))))), axis=1)
+                (Omega, data_tmp[:, range(int(cs[ind] * T))] -
+                 np.outer(means[ind], np.ones((1, int(T * cs[ind]))))),
+                axis=1)
             y = np.concatenate((y, ind * np.ones(int(T * cs[ind]))))
             ind += 1
 
@@ -168,11 +203,15 @@ def gen_data(testcase, selected_target=[6, 8], T=None, p=None, cs=None, means=No
         Omega = Omega / np.sqrt(p)
 
     else:
-        root = '../data/self_define'
-        if not os.path.exists(root):
-            os.mkdir(root)
+        root = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
+            'data/self_define')
+        if not os.path.isdir(root):
+            os.makedirs(root)
 
-        data_path = os.path.join(root, ''.join((testcase, '_', str(T), '_', str(p), '_', str(cs), '_', mode)))
+        data_path = os.path.join(
+            root, ''.join(
+                (testcase, '_', str(T), '_', str(p), '_', str(cs), '_', mode)))
         if os.path.exists(data_path):
             with open(data_path, 'r') as f:
                 data = json.load(f)
@@ -185,9 +224,14 @@ def gen_data(testcase, selected_target=[6, 8], T=None, p=None, cs=None, means=No
 
             K = len(cs)
             for i in range(K):
-                tmp = rng.multivariate_normal(means[i], covs[i], size=int(T * cs[i])).T
+                tmp = rng.multivariate_normal(means[i],
+                                              covs[i],
+                                              size=int(T * cs[i])).T
                 X = np.concatenate((X, tmp), axis=1)
-                Omega = np.concatenate((Omega, tmp - np.outer(means[i], np.ones((1, int(T * cs[i]))))), axis=1)
+                Omega = np.concatenate(
+                    (Omega,
+                     tmp - np.outer(means[i], np.ones((1, int(T * cs[i]))))),
+                    axis=1)
                 y = np.concatenate((y, i * np.ones(int(T * cs[i]))))
 
             X = X / np.sqrt(p)
@@ -209,7 +253,14 @@ def gen_data(testcase, selected_target=[6, 8], T=None, p=None, cs=None, means=No
     return X, Omega, y, means, covs, K, p, T
 
 
-def my_dataset_custome(testcase, selected_target=[6, 8], T_train=None, T_test=None, p=None, cs=None, means=None, covs=None):
+def my_dataset_custome(testcase,
+                       selected_target=[6, 8],
+                       T_train=None,
+                       T_test=None,
+                       p=None,
+                       cs=None,
+                       means=None,
+                       covs=None):
     '''Generate GMM data generate the data matrix with respect to different test cases.
 
     Arguments:
@@ -235,18 +286,20 @@ def my_dataset_custome(testcase, selected_target=[6, 8], T_train=None, T_test=No
     '''
     if testcase == 'MNIST' or testcase == 'CIFAR10':
         # get train and test dataset and then packed as torch.Dataset
-        X_train, Omega_train, Y_train, means, covs, K, p, train_T = gen_data(testcase,
-                                                                             selected_target=selected_target,
-                                                                             T=T_train,
-                                                                             cs=cs,
-                                                                             mode='train')
+        X_train, Omega_train, Y_train, means, covs, K, p, train_T = gen_data(
+            testcase,
+            selected_target=selected_target,
+            T=T_train,
+            cs=cs,
+            mode='train')
         train_dataset = my_dataset(X_train, Y_train)
 
-        X_test, Omega_test, Y_test, _, _, _, _, test_T = gen_data(testcase,
-                                                                  selected_target=selected_target,
-                                                                  T=T_test,
-                                                                  cs=cs,
-                                                                  mode='test')
+        X_test, Omega_test, Y_test, _, _, _, _, test_T = gen_data(
+            testcase,
+            selected_target=selected_target,
+            T=T_test,
+            cs=cs,
+            mode='test')
         test_dataset = my_dataset(X_test, Y_test)
 
     else:
@@ -260,7 +313,9 @@ def my_dataset_custome(testcase, selected_target=[6, 8], T_train=None, T_test=No
                 covs.append(np.eye(p))
         elif testcase == 'means':
             for i in range(len(cs)):
-                means.append(np.concatenate((np.zeros(i), 4 * np.ones(1), np.zeros(p - i - 1))))
+                means.append(
+                    np.concatenate(
+                        (np.zeros(i), 4 * np.ones(1), np.zeros(p - i - 1))))
                 covs.append(np.eye(p))
         elif testcase == 'var':
             for i in range(len(cs)):
@@ -268,19 +323,22 @@ def my_dataset_custome(testcase, selected_target=[6, 8], T_train=None, T_test=No
                 covs.append(np.eye(p) * (1 + 8 * i / np.sqrt(p)))
         elif testcase == 'mixed':
             for i in range(len(cs)):
-                means.append(np.concatenate((np.zeros(i * 8), 8 * np.ones(1), np.zeros(p - i * 8 - 1))))
+                means.append(
+                    np.concatenate((np.zeros(i * 8), 8 * np.ones(1),
+                                    np.zeros(p - i * 8 - 1))))
                 # covs.append((1+4*i/np.sqrt(p))*scipy.linalg.toeplitz( [(.4*i)**x for x in range(p)] ))
                 covs.append(np.eye(p) * (1 + 8 * i / np.sqrt(p)))
         means = np.array(means)
         covs = np.array(covs)
         # 先获取训练和测试数据，再封装成pytorch的数据集
-        X_train, Omega_train, Y_train, means, covs, K, p, train_T = gen_data(testcase,
-                                                                             T=T_train,
-                                                                             p=p,
-                                                                             cs=cs,
-                                                                             means=means,
-                                                                             covs=covs,
-                                                                             mode='train')
+        X_train, Omega_train, Y_train, means, covs, K, p, train_T = gen_data(
+            testcase,
+            T=T_train,
+            p=p,
+            cs=cs,
+            means=means,
+            covs=covs,
+            mode='train')
         train_dataset = my_dataset(X_train, Y_train)
         X_test, Omega_test, Y_test, _, _, _, _, test_T = gen_data(testcase,
                                                                   T=T_test,
@@ -315,4 +373,8 @@ class my_dataset(Dataset):
 
 if __name__ == "__main__":
     # train, test = my_dataset_custome('CIFAR10', selected_target=[6,8], T=6000, cs=[1/2, 1/2])
-    train, test = my_dataset_custome('iid', T_train=100, T_test=100, p=10, cs=[1 / 2, 1 / 2])
+    train, test = my_dataset_custome('iid',
+                                     T_train=100,
+                                     T_test=100,
+                                     p=10,
+                                     cs=[1 / 2, 1 / 2])

@@ -1,3 +1,10 @@
+import sys
+import os
+
+sys.path.append(
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
+
 import math
 from collections import OrderedDict
 
@@ -8,8 +15,8 @@ import torch.nn as nn  # import modules
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 from utils.data_prepare import my_dataset_custome
-from utils.model import My_Model
-from utils.solve_equation import solve_equation
+from model_define.model import My_Model
+from equation_solve.solve_equation import solve_equation
 from utils.utils import estim_tau_tensor
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -20,7 +27,11 @@ if __name__ == "__main__":
     cs = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
     K = len(cs)
     # load data
-    res = my_dataset_custome('MNIST', T_train=50000, T_test=8000, cs=cs, selected_target=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    res = my_dataset_custome('MNIST',
+                             T_train=50000,
+                             T_test=8000,
+                             cs=cs,
+                             selected_target=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     # res = my_dataset_custome('MNIST', T_train=10000, T_test=1600, cs=cs, selected_target=[6,  8])
     dataset_train, dataset_test = res[0], res[1]
     tau_zero = np.sqrt(estim_tau_tensor(dataset_train.X))
@@ -30,7 +41,7 @@ if __name__ == "__main__":
     # origin network setting
     layer_num = 3  # layer number for network
     input_num = 784  # input dimension for network 784/256
-    weight_num_list = [20000, 20000, 11000]  # number for neurons for each layer
+    weight_num_list = [2000, 2000, 1100]  # number for neurons for each layer
     activation_list = [
         {
             'name': 'ReLU',
@@ -68,13 +79,15 @@ if __name__ == "__main__":
     model_origin = nn.Sequential(
         OrderedDict([
             ('feature', model),
-            ('classification', nn.Linear(model.weight_num_list[-1], K, bias=False)),
+            ('classification',
+             nn.Linear(model.weight_num_list[-1], K, bias=False)),
             ('activation', nn.Softmax()),
         ]))
     model_new = nn.Sequential(
         OrderedDict([
             ('feature', new_model),
-            ('classification', nn.Linear(new_model.weight_num_list[-1], K, bias=False)),
+            ('classification',
+             nn.Linear(new_model.weight_num_list[-1], K, bias=False)),
             ('activation', nn.Softmax()),
         ]))
 
@@ -96,13 +109,17 @@ if __name__ == "__main__":
             mask = torch.tensor(mask.reshape(fc.weight.shape)).float()
             nn.init.normal_(fc.weight)
             with torch.no_grad():
-                fc.weight = torch.nn.Parameter(mask * fc.weight.data, requires_grad=False)
+                fc.weight = torch.nn.Parameter(mask * fc.weight.data,
+                                               requires_grad=False)
     elif initialization_way == 'ternary':
         # tarnary weight with sparsity kesi
         for fc in model_new.feature.fc_layers:
             init = np.zeros(fc.weight.shape).flatten()
-            init[:round(1 / 2 * (1 - kesi) * init.size)] = 1 / np.sqrt(1 - kesi)
-            init[round(1 / 2 * (1 - kesi) * init.size):2 * round(1 / 2 * (1 - kesi) * init.size)] = -1 / np.sqrt(1 - kesi)
+            init[:round(1 / 2 * (1 - kesi) *
+                        init.size)] = 1 / np.sqrt(1 - kesi)
+            init[round(1 / 2 * (1 - kesi) * init.size):2 *
+                 round(1 / 2 *
+                       (1 - kesi) * init.size)] = -1 / np.sqrt(1 - kesi)
             # c = Counter(init)
             np.random.shuffle(init)
             init = torch.tensor(init.reshape(fc.weight.shape)).float()
@@ -117,14 +134,21 @@ if __name__ == "__main__":
     lr = 0.001
     config = {"save_path": "./model_origin", "early_stop": 20, 'n_epochs': 500}
     early_stop_count = 0
-    epochs, best_loss, step, early_stop_count = config['n_epochs'], math.inf, 0, 0
+    epochs, best_loss, step, early_stop_count = config[
+        'n_epochs'], math.inf, 0, 0
 
     dataset_train.Y = F.one_hot(torch.tensor(dataset_train.Y).long(), K)
     dataset_train.Y = dataset_train.Y.float()
     dataset_test.Y = F.one_hot(torch.tensor(dataset_test.Y).long(), K)
     dataset_test.Y = dataset_test.Y.float()
-    train_loader = DataLoader(dataset_train, batch_size=batch_size, shuffle=False, drop_last=True)
-    test_loader = DataLoader(dataset_test, batch_size=batch_size, shuffle=False, drop_last=True)
+    train_loader = DataLoader(dataset_train,
+                              batch_size=batch_size,
+                              shuffle=False,
+                              drop_last=True)
+    test_loader = DataLoader(dataset_test,
+                             batch_size=batch_size,
+                             shuffle=False,
+                             drop_last=True)
     # shuffle????????????
 
     net = net.to(device)
@@ -141,7 +165,8 @@ if __name__ == "__main__":
         # training
         for train_data, train_label in train_loader:
             optimizer.zero_grad()
-            train_data, train_label = train_data.to(device), train_label.to(device)
+            train_data, train_label = train_data.to(device), train_label.to(
+                device)
             pred = net(train_data)
             loss = criterion(pred, train_label)
             loss.backward()
@@ -150,7 +175,8 @@ if __name__ == "__main__":
             # accuracy
             _, index = pred.data.cpu().topk(1, dim=1)
             _, index_label = train_label.data.cpu().topk(1, dim=1)
-            accuracy_batch = np.sum((index.squeeze(dim=1) == index_label.squeeze(dim=1)).numpy())
+            accuracy_batch = np.sum(
+                (index.squeeze(dim=1) == index_label.squeeze(dim=1)).numpy())
             accuracy_batch = accuracy_batch / len(train_label)
             accuracy_record.append(accuracy_batch)
         train_loss = sum(loss_record) / len(loss_record)
@@ -169,7 +195,8 @@ if __name__ == "__main__":
             # accuracy
             _, index = pred.data.cpu().topk(1)
             _, index_label = val_label.data.cpu().topk(1, dim=1)
-            accuracy_batch = np.sum((index.squeeze(dim=1) == index_label.squeeze(dim=1)).numpy())
+            accuracy_batch = np.sum(
+                (index.squeeze(dim=1) == index_label.squeeze(dim=1)).numpy())
             accuracy_batch = accuracy_batch / len(val_label)
             accuracy_record.append(accuracy_batch)
         val_loss = sum(loss_record) / len(test_loader)

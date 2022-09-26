@@ -12,7 +12,16 @@ __license__ = "GPL"
 __version__ = "1.0.1"
 __email__ = "yongqi_du@hust.edu.cn"
 __status__ = "Production"
-__all__ = ['custome_activation_analysis', 'custome_activation_analysis_noparam']
+__all__ = [
+    'custome_activation_analysis', 'custome_activation_analysis_noparam'
+]
+
+import sys
+import os
+
+sys.path.append(
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
 
 import math
 from collections import Counter, OrderedDict
@@ -24,7 +33,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from utils.data_prepare import my_dataset_custome
-from utils.model import My_Model
+from model_define.model import My_Model
 from utils.utils import estim_tau_tensor
 
 device = "cuda:2" if torch.cuda.is_available() else "cpu"
@@ -36,7 +45,11 @@ if __name__ == '__main__':
     K = len(cs)
 
     # load data
-    res = my_dataset_custome('var', T_train=10000, T_test=1800, p=784, cs=[0.5, 0.5])
+    res = my_dataset_custome('var',
+                             T_train=10000,
+                             T_test=1800,
+                             p=784,
+                             cs=[0.5, 0.5])
     # res = my_dataset_custome('MNIST', T_train=10000, T_test=1800, cs=cs, selected_target=[6,  8])
     dataset_train, dataset_test = res[0], res[1]
     'to be done here new net configuration here just binaryzero and binary last'
@@ -49,11 +62,15 @@ if __name__ == '__main__':
     weight_num_list = [3000, 1000]  # number for neurons for each layer
     activation_list = [
         {
-            'name': 'Sigmoid',
+            'name': 'ReLU',
             'args': None
         },
         {
-            'name': 'Sigmoid',
+            'name': 'ReLU',
+            'args': None
+        },
+        {
+            'name': 'ReLU',
             'args': None
         },
     ]
@@ -69,7 +86,8 @@ if __name__ == '__main__':
     model_origin = nn.Sequential(
         OrderedDict([
             ('feature', model),
-            ('classification', nn.Linear(model.weight_num_list[-1], 2, bias=False)),
+            ('classification',
+             nn.Linear(model.weight_num_list[-1], 2, bias=False)),
             ('activation', nn.Softmax()),
         ]))
 
@@ -84,22 +102,39 @@ if __name__ == '__main__':
 
     batch_size = 128
     lr = 0.01
-    config = {"save_path": "./model_origin", "early_stop": 20, 'n_epochs': 200}
-    epochs, best_loss, step, early_stop_count = config['n_epochs'], math.inf, 0, 0
+    config = {
+        "save_path": "./compression/mnist/model_origin",
+        "early_stop": 20,
+        'n_epochs': 200
+    }
+    epochs, best_loss, step, early_stop_count = config[
+        'n_epochs'], math.inf, 0, 0
 
+    # save path
+    if not os.path.exists(os.path.split(config['save_path'])[0]):
+        os.makedirs(os.path.split(config['save_path'])[0])
     # define data
     dataset_train.Y = F.one_hot(torch.tensor(dataset_train.Y).long(), K)
     dataset_train.Y = dataset_train.Y.float()
     dataset_test.Y = F.one_hot(torch.tensor(dataset_test.Y).long(), K)
     dataset_test.Y = dataset_test.Y.float()
-    train_loader = DataLoader(dataset_train, batch_size=batch_size, shuffle=False, drop_last=True)
-    test_loader = DataLoader(dataset_test, batch_size=batch_size, shuffle=False, drop_last=True)
+    train_loader = DataLoader(dataset_train,
+                              batch_size=batch_size,
+                              shuffle=False,
+                              drop_last=True)
+    test_loader = DataLoader(dataset_test,
+                             batch_size=batch_size,
+                             shuffle=False,
+                             drop_last=True)
     # shuffle?????????????????????????
     net = net.to(device)
     if device == 'cuda:2':
         cudnn.benchmark = True
 
-    optimizer = torch.optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
+    optimizer = torch.optim.SGD(net.parameters(),
+                                lr=lr,
+                                momentum=0.9,
+                                weight_decay=5e-4)
     criterion = nn.CrossEntropyLoss()
     # --------------------------Trainning and Validation-----------------------------------
     for epoch in range(epochs):
@@ -110,7 +145,8 @@ if __name__ == '__main__':
         # trainning
         for train_data, train_label in train_loader:
             optimizer.zero_grad()
-            train_data, train_label = train_data.to(device), train_label.to(device)
+            train_data, train_label = train_data.to(device), train_label.to(
+                device)
             pred = net(train_data)
             loss = criterion(pred, train_label)
             loss.backward()
@@ -119,7 +155,8 @@ if __name__ == '__main__':
             # accuracy
             _, index = pred.data.cpu().topk(1, dim=1)
             _, index_label = train_label.data.cpu().topk(1, dim=1)
-            accuracy_batch = np.sum((index.squeeze(dim=1) == index_label.squeeze(dim=1)).numpy())
+            accuracy_batch = np.sum(
+                (index.squeeze(dim=1) == index_label.squeeze(dim=1)).numpy())
             accuracy_batch = accuracy_batch / len(train_label)
             accuracy_record.append(accuracy_batch)
         train_loss = sum(loss_record) / len(loss_record)
@@ -138,7 +175,8 @@ if __name__ == '__main__':
             # accuracy
             _, index = pred.data.cpu().topk(1, dim=1)
             _, index_label = val_label.data.cpu().topk(1, dim=1)
-            accuracy_batch = np.sum((index.squeeze(dim=1) == index_label.squeeze(dim=1)).numpy())
+            accuracy_batch = np.sum(
+                (index.squeeze(dim=1) == index_label.squeeze(dim=1)).numpy())
             accuracy_batch = accuracy_batch / len(val_label)
             accuracy_record.append(accuracy_batch)
         val_loss = sum(loss_record) / len(loss_record)
@@ -150,17 +188,21 @@ if __name__ == '__main__':
 
         if val_loss < best_loss:
             best_loss = val_loss
-            torch.save(net.state_dict(), config['save_path'])  # Save your best model
+            torch.save(net.state_dict(),
+                       config['save_path'])  # Save your best model
             print('Saving model with loss {:.3f}...'.format(best_loss))
             early_stop_count = 0
         else:
             early_stop_count += 1
 
         if early_stop_count >= config['early_stop']:
-            print('\nModel is not improving, so we halt the trainning session.')
+            print(
+                '\nModel is not improving, so we halt the trainning session.')
             break
 
     # origin performance
     model_origin_final_accuracy, model_origin_final_loss = val_accuracy, val_loss
 
-    print(f'origin model: Valid loss: {model_origin_final_loss:.4f}, Valid accuracy: {model_origin_final_accuracy:.4f}')
+    print(
+        f'origin model: Valid loss: {model_origin_final_loss:.4f}, Valid accuracy: {model_origin_final_accuracy:.4f}'
+    )

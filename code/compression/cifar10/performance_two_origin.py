@@ -14,6 +14,12 @@ __version__ = "1.0.1"
 __email__ = "yongqi_du@hust.edu.cn"
 __status__ = "Production"
 
+import sys
+import os
+
+sys.path.append(
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
 import math
 from collections import Counter, OrderedDict
 
@@ -24,11 +30,11 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, Dataset
-from utils.model import My_Model
+from model_define.model import My_Model
 
 from vgg_net_cifar10 import VGG
 
-device = "cuda:2" if torch.cuda.is_available() else "cpu"
+device = "cuda:1" if torch.cuda.is_available() else "cpu"
 
 
 class Feature_Dataset(Dataset):
@@ -61,21 +67,34 @@ if __name__ == '__main__':
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.Normalize((0.4914, 0.4822, 0.4465),
+                             (0.2023, 0.1994, 0.2010)),
     ])
 
     transform_test = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.Normalize((0.4914, 0.4822, 0.4465),
+                             (0.2023, 0.1994, 0.2010)),
     ])
 
-    train_data = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
-    trainloader = torch.utils.data.DataLoader(train_data, batch_size=50000, shuffle=False)
+    train_data = torchvision.datasets.CIFAR10(root='./data',
+                                              train=True,
+                                              download=True,
+                                              transform=transform_train)
+    trainloader = torch.utils.data.DataLoader(train_data,
+                                              batch_size=50000,
+                                              shuffle=False)
 
-    test_data = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
-    testloader = torch.utils.data.DataLoader(test_data, batch_size=10000, shuffle=False)
+    test_data = torchvision.datasets.CIFAR10(root='./data',
+                                             train=False,
+                                             download=True,
+                                             transform=transform_test)
+    testloader = torch.utils.data.DataLoader(test_data,
+                                             batch_size=10000,
+                                             shuffle=False)
 
-    classes = ('Airplane', 'Car', 'Bird', 'Cat', 'Deer', 'Dog', 'Frog', 'Horse', 'Ship', 'Truck')
+    classes = ('Airplane', 'Car', 'Bird', 'Cat', 'Deer', 'Dog', 'Frog',
+               'Horse', 'Ship', 'Truck')
 
     # ------------------------------Feature Extration----------------------------------
     train_data, train_label = next(iter(trainloader))
@@ -88,14 +107,16 @@ if __name__ == '__main__':
         p = feature_train.shape[1]
         N = feature_train.shape[0]
         mean_selected_data = torch.mean(feature_train, dim=0)
-        norm2_selected_data = torch.sum((feature_train - mean_selected_data)**2, (0, 1)) / N
+        norm2_selected_data = torch.sum(
+            (feature_train - mean_selected_data)**2, (0, 1)) / N
         feature_train = feature_train - mean_selected_data
         feature_train = feature_train / np.sqrt(norm2_selected_data)
 
         p = feature_test.shape[1]
         N = feature_test.shape[0]
         mean_selected_data = torch.mean(feature_test, dim=0)
-        norm2_selected_data = torch.sum((feature_test - mean_selected_data)**2, (0, 1)) / N
+        norm2_selected_data = torch.sum((feature_test - mean_selected_data)**2,
+                                        (0, 1)) / N
         feature_test = feature_test - mean_selected_data
         feature_test = feature_test / np.sqrt(norm2_selected_data)
 
@@ -103,7 +124,9 @@ if __name__ == '__main__':
     feature_train_dataset = Feature_Dataset(feature_train, train_label)
     feature_test_dataset = Feature_Dataset(feature_test, test_label)
 
-    tau_zero = torch.sqrt(torch.mean(torch.diag(torch.mm(feature_train, feature_train.t())))).detach().numpy()
+    tau_zero = torch.sqrt(
+        torch.mean(torch.diag(torch.mm(feature_train,
+                                       feature_train.t())))).detach().numpy()
     print(tau_zero)
     # -------------------------------- Network Setting---------------------------------
     # origin network setting
@@ -138,7 +161,8 @@ if __name__ == '__main__':
     model_origin = nn.Sequential(
         OrderedDict([
             ('feature', model),
-            ('classification', nn.Linear(model.weight_num_list[-1], 10, bias=False)),
+            ('classification',
+             nn.Linear(model.weight_num_list[-1], 10, bias=False)),
             ('activation', nn.Softmax()),
         ]))
 
@@ -153,16 +177,24 @@ if __name__ == '__main__':
     lr = 0.01
     config = {"save_path": "./model_origin", "early_stop": 20, 'n_epochs': 500}
     # define data
-    feature_train_dataloader = DataLoader(feature_train_dataset, batch_size=batch_size, shuffle=False)
-    feature_test_dataloader = DataLoader(feature_test_dataset, batch_size=batch_size, shuffle=False)
+    feature_train_dataloader = DataLoader(feature_train_dataset,
+                                          batch_size=batch_size,
+                                          shuffle=False)
+    feature_test_dataloader = DataLoader(feature_test_dataset,
+                                         batch_size=batch_size,
+                                         shuffle=False)
 
     net = net.to(device)
-    if device == 'cuda:2':
+    if device == 'cuda:1':
         #     net = torch.nn.DataParallel(net, device_ids=device_id)
         cudnn.benchmark = True
 
-    epochs, best_loss, step, early_stop_count = config['n_epochs'], math.inf, 0, 0
-    optimizer = torch.optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
+    epochs, best_loss, step, early_stop_count = config[
+        'n_epochs'], math.inf, 0, 0
+    optimizer = torch.optim.SGD(net.parameters(),
+                                lr=lr,
+                                momentum=0.9,
+                                weight_decay=5e-4)
     criterion = nn.CrossEntropyLoss()
 
     # ------------------------------Training and Validation-----------------------------
@@ -174,7 +206,8 @@ if __name__ == '__main__':
             optimizer.zero_grad()
             # train_data , train_label = train_data.to(device), train_label.to(device)
             # X, y = train_data.to(device), train_label.to(device)
-            train_data, train_label = train_data.to(device), train_label.to(device)
+            train_data, train_label = train_data.to(device), train_label.to(
+                device)
             pred = net(train_data)
             # print(pred.device)
             # print(train_label.device)
@@ -185,7 +218,8 @@ if __name__ == '__main__':
             # accuracy
             _, index = pred.data.cpu().topk(1, dim=1)
             index_label = train_label.data.cpu()
-            accuracy_batch = np.sum((index.squeeze(dim=1) == index_label).numpy())
+            accuracy_batch = np.sum(
+                (index.squeeze(dim=1) == index_label).numpy())
             accuracy_batch = accuracy_batch / len(train_label)
             accuracy_record.append(accuracy_batch)
         train_loss = sum(loss_record) / len(loss_record)
@@ -205,7 +239,8 @@ if __name__ == '__main__':
             # accuracy
             _, index = pred.data.cpu().topk(1, dim=1)
             index_label = val_label.data.cpu()
-            accuracy_batch = np.sum((index.squeeze(dim=1) == index_label).numpy())
+            accuracy_batch = np.sum(
+                (index.squeeze(dim=1) == index_label).numpy())
             accuracy_batch = accuracy_batch / len(val_label)
             accuracy_record.append(accuracy_batch)
         val_loss = sum(loss_record) / len(testloader)
@@ -217,7 +252,8 @@ if __name__ == '__main__':
 
         if val_loss < best_loss:
             best_loss = val_loss
-            torch.save(net.state_dict(), config['save_path'])  # Save your best model
+            torch.save(net.state_dict(),
+                       config['save_path'])  # Save your best model
             print('Saving model with loss {:.3f}...'.format(best_loss))
             early_stop_count = 0
         else:
@@ -231,4 +267,6 @@ if __name__ == '__main__':
     # origin performance
     model_origin_final_accuracy, model_origin_final_loss = val_accuracy, val_loss
 
-    print(f'origin model: Valid loss: {model_origin_final_loss:.4f}, Valid accuracy: {model_origin_final_accuracy:.4f}')
+    print(
+        f'origin model: Valid loss: {model_origin_final_loss:.4f}, Valid accuracy: {model_origin_final_accuracy:.4f}'
+    )

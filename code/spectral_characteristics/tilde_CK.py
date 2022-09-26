@@ -2,20 +2,22 @@
 # -*- coding: utf-8 -*-
 '''Verify consistency for spectral distrubutions of CK and CK_tilde.
 '''
+import sys
+import os
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 import numpy as np
 import scipy
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from utils.data_prepare import my_dataset_custome
-from utils.expect_calculate import expect_calcu
-from utils.model import My_Model
+from expect_cal.expect_calculate import expect_calcu
+from model_define.model import My_Model
 from utils.utils import estim_tau_tensor
-
 from plot_eigen import plot_eigen
 
-device = "cuda:2" if torch.cuda.is_available() else "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def calculate_CK(model, data, mode='normal'):
@@ -31,16 +33,37 @@ def calculate_CK(model, data, mode='normal'):
     for j in range(model.layer_num):
         with torch.no_grad():
             if mode == 'student t':
-                #student t
+                # student t
                 if j == 0:
-                    r = scipy.stats.t.rvs(50.0, size=(model.weight_num_list[j], model.input_num))
+                    r = scipy.stats.t.rvs(50.0,
+                                          size=(model.weight_num_list[j],
+                                                model.input_num))
                 else:
-                    r = scipy.stats.t.rvs(50.0, size=(model.weight_num_list[j], model.weight_num_list[j - 1]))
-                model.fc_layers[j].weight = nn.Parameter(torch.tensor(r).float())
+                    r = scipy.stats.t.rvs(50.0,
+                                          size=(model.weight_num_list[j],
+                                                model.weight_num_list[j - 1]))
+                model.fc_layers[j].weight = nn.Parameter(
+                    torch.tensor(r).float(), requires_grad=False)
             elif mode == 'normal':
                 # normal
                 nn.init.normal_(model.fc_layers[j].weight)
                 model.fc_layers[j].weight.requires_grad = False
+            elif mode == 'bernoulli':
+                # bernoulli
+                kesi = 0.5
+                init = np.zeros(model.fc_layers[j].weight.shape).flatten()
+                init[:round(1 / 2 * (1 - kesi) *
+                            init.size)] = 1 / np.sqrt(1 - kesi)
+                init[round(1 / 2 * (1 - kesi) * init.size):2 *
+                     round(1 / 2 *
+                           (1 - kesi) * init.size)] = -1 / np.sqrt(1 - kesi)
+                np.random.shuffle(init)
+                init = torch.tensor(
+                    init.reshape(model.fc_layers[j].weight.shape)).float()
+                with torch.no_grad():
+                    model.fc_layers[j].weight = torch.nn.Parameter(
+                        init, requires_grad=False)
+
     with torch.no_grad():
         out = model(data).detach().cpu().numpy()
     Phi_loop = out @ out.T
@@ -57,7 +80,7 @@ def calculate_CK_loop(model, data, loop):
     Returns:
         Phi_loop -- means of output * output.T over loop times
     """
-    mode = 'normal'  # you can change to student t here.
+    mode = 'normal'  # you can change to student t / bernoulli here.
     [n, _] = data.shape
     Phi = np.zeros((n, n))
     for i in range(loop):
@@ -65,7 +88,7 @@ def calculate_CK_loop(model, data, loop):
         r = calculate_CK(model, data, mode)
         Phi = Phi + r
     Phi = Phi / loop
-    print(Phi)
+    # print(Phi)
 
     return Phi
 
@@ -86,14 +109,18 @@ def calculate_CK_tilde_coef(model, tau_zero):
         name = activation['name']
         args = activation['args']
         if args:
-            zero_order, first_order, second_order, square_second_order, tau = expect_calcu(name, **args)
+            zero_order, first_order, second_order, square_second_order, tau = expect_calcu(
+                name, **args)
         else:
-            zero_order, first_order, second_order, square_second_order, tau = expect_calcu(name)
+            zero_order, first_order, second_order, square_second_order, tau = expect_calcu(
+                name)
         temp = zero_order(tao_last)
         print(temp)
         d1 = first_order(tao_last)**2 * d_last[1]
-        d2 = first_order(tao_last)**2 * d_last[2] + 1 / 4 * second_order(tao_last)**2 * d_last[4]**2
-        d3 = first_order(tao_last)**2 * d_last[3] + 1 / 2 * second_order(tao_last)**2 * d_last[1]**2
+        d2 = first_order(tao_last)**2 * d_last[2] + 1 / 4 * second_order(
+            tao_last)**2 * d_last[4]**2
+        d3 = first_order(tao_last)**2 * d_last[3] + 1 / 2 * second_order(
+            tao_last)**2 * d_last[1]**2
         d4 = 1 / 2 * square_second_order(tao_last) * d_last[4]
         tao_last = np.sqrt(tau(tao_last))
         d_last = np.array([tao_last, d1, d2, d3, d4])
@@ -136,7 +163,8 @@ def calculate_CK_tilde(model, tau_zero, X, T, K, p, means, covs, y, Omega):
         for j in range(K):
             S[i, j] = np.trace(covs[i] @ covs[j]) / p
 
-    V = np.concatenate((J / np.sqrt(p), phi.reshape(T, 1)), axis=1)  # whats omega here for
+    V = np.concatenate((J / np.sqrt(p), phi.reshape(T, 1)),
+                       axis=1)  # whats omega here for
     A11 = d_last[2] * np.outer(t, t) + d_last[3] * S
     A = np.zeros((K + 1, K + 1))
     A[0:K, 0:K] = A11
@@ -145,7 +173,8 @@ def calculate_CK_tilde(model, tau_zero, X, T, K, p, means, covs, y, Omega):
     A[K, K] = d_last[2]
 
     tilde_Phi = d_last[1] * (X) @ (X.T) + V @ A @ (V.T) + (
-        d_last[0]**2 - d_last[1] * tau_zero**2 - d_last[3] * tau_zero**4) * np.eye(T)  # check tau and tau**2 ,am i right here?
+        d_last[0]**2 - d_last[1] * tau_zero**2 - d_last[3] *
+        tau_zero**4) * np.eye(T)  # check tau and tau**2 ,am i right here?
 
     print(d_last)
 
@@ -157,12 +186,19 @@ if __name__ == "__main__":
     cs = [0.5, 0.5]
     K = len(cs)
     # load data
-    res = my_dataset_custome('mixed', T_train=8000, T_test=0, cs=cs, p=2000)
-    # res = my_dataset_custome('MNIST',T_train=1000, T_test=0, cs=cs, selected_target=[6, 8])
+    res = my_dataset_custome('mixed', T_train=8000, T_test=0, cs=cs, p=4650)
+    # res = my_dataset_custome('MNIST',
+    #                          T_train=3200,
+    #                          T_test=0,
+    #                          cs=cs,
+    #                          selected_target=[6, 8])
     dataset_train = res[0]
-    X, T, K, p, means, covs, y, Omega = dataset_train.X, res[6], res[4], res[5], res[2], res[3], dataset_train.Y, res[8]
+    X, T, K, p, means, covs, y, Omega = dataset_train.X, res[6], res[4], res[
+        5], res[2], res[3], dataset_train.Y, res[8]
 
-    train_loader = DataLoader(dataset_train, batch_size=len(dataset_train), shuffle=False)
+    train_loader = DataLoader(dataset_train,
+                              batch_size=len(dataset_train),
+                              shuffle=False)
     data_inference, _ = next(iter(train_loader))
 
     tau_zero = np.sqrt(estim_tau_tensor(X))
@@ -170,12 +206,20 @@ if __name__ == "__main__":
 
     # origin network setting
     layer_num = 3  # layer number for network
-    input_num = 2000  # input dimension for network 784/256
-    weight_num_list = [10000, 10000, 10000, 10000]  # number for neurons for each layer
+    input_num = 4650  # input dimension for network 784/256
+    # number for neurons for each layer
+    weight_num_list = [2000, 2000, 1000]
     activation_list = [
         # {'name' : 'Sigmoid', 'args' : None},
         # {'name' : 'Binary_Zero', 'args' : {'s1':1, 's2': 2, 'b1': 1}},
-        # {'name' : 'poly2', 'args' : {'coe1': 1, 'coe2': 1 , 'coe3': 1}},
+        # {
+        #     'name': 'Poly2',
+        #     'args': {
+        #         'coe1': 0.2,
+        #         'coe2': 1,
+        #         'coe3': 0
+        #     }
+        # },
         {
             'name': 'ReLU',
             'args': None
@@ -201,11 +245,20 @@ if __name__ == "__main__":
 
     loop = 500
     # calculate two CK_tilde
-    CK_tilde = calculate_CK_tilde(model, tau_zero, X, T, K, p, means, covs, y, Omega)
+    CK_tilde = calculate_CK_tilde(model, tau_zero, X, T, K, p, means, covs, y,
+                                  Omega)
     # CK_new = calculate_CK_tilde(new_model, tau_zero)
 
     CK_loop = calculate_CK_loop(model, data_inference, loop=loop)
-    # a = scipy.linalg.norm(CK_origin, CK_new, ord=2)
+
+    error_norm = scipy.linalg.norm(CK_tilde - CK_loop, ord=2)
+    CK_tilde_norm = scipy.linalg.norm(CK_tilde, ord=2)
+    CK_loop_norm = scipy.linalg.norm(CK_loop, ord=2)
+    print(error_norm)
+    print(CK_tilde_norm)
+    print(CK_loop_norm)
+
+    # a = scipy.linalg.norm(CK_tilde, CK_new, ord=2)
     # print(a)
     # performance calculate
 
@@ -218,7 +271,7 @@ if __name__ == "__main__":
         'p': str(p),
         'layer_num': str(model.layer_num),
         'loop': str(loop),
-        'activation': str(activation_list),
+        'activation': 'rrr',
         'weight_num_list': str(weight_num_list)
     }
     plot_eigen(CK_tilde, CK_loop, setting=setting)
