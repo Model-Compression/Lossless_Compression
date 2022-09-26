@@ -5,18 +5,18 @@ This repository contains code to reproduces the results in the paper "*'Lossless
 ## About the code
 
 * `code/compression` contains 
-  * `code/compression/mnist` (Experiment 2)
+  * `code/compression/mnist` **(Experiment 2.1)**
     * **mnist_origin.py** for classification with original dense neural network on MNIST dataset.
     * **performance_match.py** for classification with compressed neural network utlizing the proposed NTK*LC approach on MNIST dataset.
     * **mnist_magnitude_pruning.py** for classification with compressed neural network by magnitude pruning.
-  * `code/compression/cifar10`
+  * `code/compression/cifar10` **(Experiment 2.2)**
     * **vgg_net_cifar10.py** for defining VGG19 suitable for CIFAR10
     * **vgg_train.py** for training VGG19 defined in vgg_net_cifar10.py on CIFAR10, and get parameters of convolution layers for feature extraction.
     * **performance_origin.py** for classification performance of the original dense neural network on CIFAR10.
     * **performance_two.py** for classification performance of the compressed neural network (compressed by our NTK-LC algorithm) on CIFAR10.
     * **cifar10_magnitude_pruning.py** for classification with compressed neural network by magnitude pruning.
 
-* `code/spectral_characteristics` (Experiment 1) contains
+* `code/spectral_characteristics` **(Experiment 1)** contains
   * **tilde_CK.py** for verifying the consistency of spectrum distribution for **theoretical** (calculated with our theorem results) and **practical** (calculated by the original definition) conjugate kernel(CK).
   * **plot_eigen.py** for ploting eigenvalues and eigenvectors for a given matrix.
 
