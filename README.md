@@ -1,6 +1,6 @@
 # NTK-LC
 
-This repository contains code to reproduces the results in the paper "* 'Lossless' Compression of Deep Neural Networks: A High-dimensional Neural Tangent Kernel Approach*" (**NTK-LC**) [^1].
+This repository contains code to reproduces the results in the paper "*'Lossless' Compression of Deep Neural Networks: A High-dimensional Neural Tangent Kernel Approach*" (**NTK-LC**) [^1].
 
 ## About the code
 
