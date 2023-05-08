@@ -1,69 +1,244 @@
-# from tilde_CK import calculate_CK_loop, calculate_CK_tilde, my_model, my_dataset_custome, my_activation_torch
-# import numpy as np
-# import torch.nn as nn
-# import torch
-# from torch.utils.data import DataLoader, Dataset
-# import torch.optim as optim
-# # from torch.
-# from plot_eigen import plot_eigen
-# # NTK loop here??????????????????
-# def calculate_NTK_loop(model, data, loop):
-#     [n,p] = data.shape
-#     Phi = np.zeros((n, n))
-#     model.cuda()
-#     data.cuda()
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+'''Verify consistency for spectral distrubutions of CK and CK_tilde.
+'''
+import sys
+import os
 
-#     for i in range(loop):
-#         # initialize weight
-#         for fc in model.fc_layers:
-#             nn.init.normal_(fc.weight)
-#         with torch.no_grad():
-#             out = model(data).detach().cpu().numpy()
-#             loss = nn.MSELoss(out, )
-#         Phi_loop = out@out.T/loop
-#         Phi = Phi + Phi_loop
-#         # print (Phi)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+import numpy as np
+import scipy
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
+from utils.data_prepare import my_dataset_custome
+from expect_cal.expect_calculate import expect_calcu
+from model_define.model import My_Model
+from utils.utils import estim_tau_tensor
+from plot_eigen import plot_eigen
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+
+def calculate_CK_tilde_coef(model, tau_zero):
+    '''calculate coefficients each layer(alpha1, alpha2, alpha3, alpha4, tau) and print.
+    Note: no variables, this function can be used only for a known network(without unknown variables for activation functions)
+
+    Arguments:
+        model -- model instance of class My_Model in model.py
+        tau_zero -- tau_zero calculated with data
+    Returns:
+        d_last -- alpha1, alpha2, alpha3, alpha4, tau for last layer, which can be used to calculate CK_tilde
+    '''
+    tao_last = tau_zero
+    d_last = np.array([tao_last, 1, 0, 0, 1])  # input d1, d2, d3, d4
+    for activation in model.activation_list:
+        name = activation['name']
+        args = activation['args']
+        if args:
+            zero_order, first_order, second_order, square_second_order, tau = expect_calcu(
+                name, **args)
+        else:
+            zero_order, first_order, second_order, square_second_order, tau = expect_calcu(
+                name)
+        temp = zero_order(tao_last)
+        print(temp)
+        d1 = first_order(tao_last)**2 * d_last[1]
+        d2 = first_order(tao_last)**2 * d_last[2] + 1 / 4 * second_order(
+            tao_last)**2 * d_last[4]**2
+        d3 = first_order(tao_last)**2 * d_last[3] + 1 / 2 * second_order(
+            tao_last)**2 * d_last[1]**2
+        d4 = 1 / 2 * square_second_order(tao_last) * d_last[4]
+        tao_last = np.sqrt(tau(tao_last))
+        d_last = np.array([tao_last, d1, d2, d3, d4])
+        print(d1, d2, d3, d4)
+        print(tao_last)
+    return d_last
+
+def calculate_NTK_tilde(model, tau_zero):
+    '''calculate coefficients each layer(beta1, beta2, beta3, tau) and print.
+    Note: no variables, this function can be used only for a known network(without unknown variables for activation functions)
+
+    Arguments:
+        model -- model instance of class My_Model in model.py
+        tau_zero -- tau_zero calculated with data
+    Returns:
+        beta_last -- beta1, beta2, beta3, tau for last layer, which can be used to calculate CK_tilde
+    '''
+    tao_last = tau_zero
+    prime_tao_last = tau_zero
+    beta_last = np.array([prime_tao_last, tao_last, 1, 0, 0, 1])   # input beta1, beta2, beta3, beta4
+    alpha_last = np.array([tao_last, 1, 0, 0, 1])  # input alpha1, alpha2, alpha3, alpha4
     
-#     return Phi
+    for activation in model.activation_list:
+        name = activation['name']
+        args = activation['args']
+        if args:
+            zero_order, first_order, second_order, square_second_order, tau, prime_tau = expect_calcu(
+                name, **args)
+        else:
+            zero_order, first_order, second_order, square_second_order, tau, prime_tau = expect_calcu(
+                name)
+        temp = zero_order(tao_last)
+        print(temp)
+        d1 = first_order(tao_last)**2 * d_last[1]
+        d2 = first_order(tao_last)**2 * d_last[2] + 1 / 4 * second_order(
+            tao_last)**2 * d_last[4]**2
+        d3 = first_order(tao_last)**2 * d_last[3] + 1 / 2 * second_order(
+            tao_last)**2 * d_last[1]**2
+        d4 = 1 / 2 * square_second_order(tao_last) * d_last[4]
+        tao_last = np.sqrt(tau(tao_last))
+        d_last = np.array([tao_last, d1, d2, d3, d4])
+        print(d1, d2, d3, d4)
+        print(tao_last)
 
-# def calculate_NTK_tilde(model, data, tau_zero):
+        # calculation for beta
+        beta_1 = first_order(tao_last)**2 * d_last[1]
+    return d_last
+    
+def calculate_CK_tilde(model, tau_zero, X, T, K, p, means, covs, y, Omega):
+    """Calculate CK_tilde using expressions we derived.
+
+    Arguments:
+        model -- model instance of class MyModel
+        tau_zero -- tau_zero calculated using all data
+        X -- data input
+        T -- number of data
+        K -- number of class
+        p -- dimension of data
+        means -- means for different classes 
+        covs -- covs for different classes 
+        y -- labels
+        Omega -- data - means
+    Returns:
+        tilde_Phi -- calculated CK_tilde using expressions we derived
+    """
+    d_last = calculate_CK_tilde_coef(model, tau_zero)
+    M = np.array([]).reshape(p, 0)
+    t0 = []
+    J = np.zeros((T, K))
+
+    for i in range(K):
+        M = np.concatenate((M, means[i].reshape(p, 1)), axis=1)
+        t0.append(np.trace(covs[i]) / p)
+        J[:, i] = (y == i) * 1
+
+    phi = np.diag(Omega.T @ Omega - J @ t0)
+    t = (t0 - tau_zero**2) * np.sqrt(p)
+    S = np.zeros((K, K))
+    for i in range(K):
+        for j in range(K):
+            S[i, j] = np.trace(covs[i] @ covs[j]) / p
+
+    V = np.concatenate((J / np.sqrt(p), phi.reshape(T, 1)),
+                       axis=1)  # whats omega here for
+    A11 = d_last[2] * np.outer(t, t) + d_last[3] * S
+    A = np.zeros((K + 1, K + 1))
+    A[0:K, 0:K] = A11
+    A[0:K, K] = d_last[2] * t
+    A[K, 0:K] = d_last[2] * t.T
+    A[K, K] = d_last[2]
+
+    tilde_Phi = d_last[1] * (X) @ (X.T) + V @ A @ (V.T) + (
+        d_last[0]**2 - d_last[1] * tau_zero**2 - d_last[3] *
+        tau_zero**4) * np.eye(T)  # check tau and tau**2 ,am i right here?
+
+    print(d_last)
+
+    return tilde_Phi
 
 
-# if __name__ == "__main__":
-#     layer_num = 3                                                                 # layer number for network
-#     input_num = 784                                                                    # input dimension for network 784/256
-#     weight_num_list = [32, 32, 32]                                    # number for neurons for each layer
-#     activation_list = [{'name' : 'ReLU', 'args' : None},
-#                         {'name' : 'Binary_Zero', 'args' : {'s1':1, 's2': 2, 'b1': 1}},
-#                         # {'name' : 't', 'args' : None}, 
-#                         {'name' : 'ReLU', 'args' : None}] 
-#                         # {'name' : 'ReLU', 'args' : None}]                               # activation for each layer, if with param, write as Binary_Zero here
-#     loop = 100                                                                   # loop for estimation CK
+if __name__ == "__main__":
 
-#     #  define model 
-#     model = my_model(layer_num = layer_num, input_num = input_num, weight_num_list = weight_num_list, activation_list = activation_list)
-#     # model.cuda()
+    cs = [0.5, 0.5]
+    K = len(cs)
+    # load data
+    res = my_dataset_custome('mixed', T_train=8000, T_test=0, cs=cs, p=4650)
+    # res = my_dataset_custome('MNIST',
+    #                          T_train=3200,
+    #                          T_test=0,
+    #                          cs=cs,
+    #                          selected_target=[6, 8])
+    dataset_train = res[0]
+    X, T, K, p, means, covs, y, Omega = dataset_train.X, res[6], res[4], res[
+        5], res[2], res[3], dataset_train.Y, res[8]
 
-#     # load data
-#     dataset = my_dataset_custome('MNIST', T=5000, cs=[0.5,0.5], selected_target=[6,8])
-#     # dataset = my_dataset_custome('iid',T=8000, p=300, cs=[0.4,0.6],selected_target=[1,2])  #selected_target here used for calculate class number ,you can change to any other index with the same len(selected_target)
+    train_loader = DataLoader(dataset_train,
+                              batch_size=len(dataset_train),
+                              shuffle=False)
+    data_inference, _ = next(iter(train_loader))
 
-#     dataloader = DataLoader(dataset, batch_size=len(dataset), shuffle=False)    # shuffle????????????
-#     data, _ = next(iter(dataloader))
+    tau_zero = np.sqrt(estim_tau_tensor(X))
+    print(tau_zero)
 
-#     # data.cuda()
+    # origin network setting
+    layer_num = 3  # layer number for network
+    input_num = 4650  # input dimension for network 784/256
+    # number for neurons for each layer
+    weight_num_list = [2000, 2000, 1000]
+    activation_list = [
+        # {'name' : 'Sigmoid', 'args' : None},
+        # {'name' : 'Binary_Zero', 'args' : {'s1':1, 's2': 2, 'b1': 1}},
+        # {
+        #     'name': 'Poly2',
+        #     'args': {
+        #         'coe1': 0.2,
+        #         'coe2': 1,
+        #         'coe3': 0
+        #     }
+        # },
+        {
+            'name': 'ReLU',
+            'args': None
+        },
+        {
+            'name': 'ReLU',
+            'args': None
+        },
+        # {'name' : 'poly2', 'args' : {'coe1': 1, 'coe2': 1 , 'coe3': 1}},
+        # {'name' : 'Sigmoid', 'args' : None}
+        {
+            'name': 'ReLU',
+            'args': None
+        }  # activation for each layer, if with param, write as Binary_Zero here
+    ]
 
-#     T = dataset.T
-#     P = np.eye(T) - np.ones((T,T))/T
+    #  define origin model
+    model = My_Model(layer_num=layer_num,
+                     input_num=input_num,
+                     weight_num_list=weight_num_list,
+                     activation_list=activation_list,
+                     tau_zero=tau_zero)
 
+    loop = 500
+    # calculate two CK_tilde
+    CK_tilde = calculate_CK_tilde(model, tau_zero, X, T, K, p, means, covs, y,
+                                  Omega)
+    # CK_new = calculate_CK_tilde(new_model, tau_zero)
 
+    CK_loop = calculate_CK_loop(model, data_inference, loop=loop)
 
-#     # calculate NTK
-#     NTK = calculate_NTK_loop(model, data)
+    error_norm = scipy.linalg.norm(CK_tilde - CK_loop, ord=2)
+    CK_tilde_norm = scipy.linalg.norm(CK_tilde, ord=2)
+    CK_loop_norm = scipy.linalg.norm(CK_loop, ord=2)
+    print(error_norm)
+    print(CK_tilde_norm)
+    print(CK_loop_norm)
 
+    # a = scipy.linalg.norm(CK_tilde, CK_new, ord=2)
+    # print(a)
+    # performance calculate
 
-#     # calculate NTK_tilde
-#     NTK_tilde = calculate_NTK_tilde(model, data)
+    # CK_loop = CK_tilde
+    # CK_tilde = CK_loop
 
-#     plot_eigen(NTK, NTK_tilde)
-
+    setting = {
+        'data': 'GMM-mixed',
+        'T': str(T),
+        'p': str(p),
+        'layer_num': str(model.layer_num),
+        'loop': str(loop),
+        'activation': 'rrr',
+        'weight_num_list': str(weight_num_list)
+    }
+    plot_eigen(CK_tilde, CK_loop, setting=setting)

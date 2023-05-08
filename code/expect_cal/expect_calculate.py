@@ -7,14 +7,14 @@ Notation: all function using numpy because scipy.integrate.quad, which is differ
 """
 
 __author__ = "Model_compression"
-__copyright__ = "Copyright 2021, Lossless compression"
+__copyright__ = "Copyright 2022, Lossless compression"
 __credits__ = [
-    "Rob Knight", "Peter Maxwell", "Gavin Huttley", "Matthew Wakefield"
+    "Yongqi Du"
 ]
 __license__ = "GPL"
 __version__ = "1.0.1"
-__maintainer__ = "Rob Knight"
-__email__ = "rob@spot.colorado.edu"
+__maintainer__ = "Yongqi Du"
+__email__ = "yongqi_du@hust.edu.cn"
 __status__ = "Development"
 # status is one of "Prototype", "Development", or "Production"
 __all__ = ['expect_calcu']
