@@ -24,6 +24,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 import numpy as np
 from scipy import stats
+from scipy.misc import derivative
 from scipy.integrate import quad
 
 from utils.activation_numpy import my_activation_numpy
@@ -173,9 +174,10 @@ def tao(name, d0, **args):
 
     Arguments:
         name -- activation name
+        d0 -- zero_order
 
     Returns:
-        tao of activation function(the quad)
+        tau of activation function(the quad)
     """
     if name == 'binary_zero':
         return lambda x, s1, s2, b1, tao_last : pow(my_activation_numpy(name, **args)(tao_last * x, s1, s2, b1) - d0, 2)\
@@ -198,8 +200,21 @@ def tao(name, d0, **args):
              * stats.norm.pdf(x)
 
 
-def expect_calcu(name, **args):
-    '''Calculate zero_order_expect, first_order_expect, second_order_expect, square_second_order_expect, tao_expect for a given activation name and args.
+def prime_tau(name, **args):
+    """Return prime_tau of activation function. Currently it's only implemented for derivable activations.
+
+    Arguments:
+        name -- activation name
+
+    Returns:
+        prime_tau of activation function(the quad)
+    """
+    return lambda x, tao_last : pow(derivative(my_activation_numpy(name, **args), tao_last * x , dx=1e-6), 2)\
+             * stats.norm.pdf(x)
+
+
+def expect_calcu(name, prime_tau_cal = False, **args):
+    '''Calculate zero_order_expect, first_order_expect, second_order_expect, square_second_order_expect, tao_expect and prime_tau_expect(optional) for a given activation name and args.
 
     Arguments:
         name -- activation name [binary_zero, binary_last, Binary_Zero, Binary_Last, T, Sign, ABS, LReLU, POSIT, Poly2, Cos, Sin, ERF, EXP, Sigmoid]
@@ -208,143 +223,176 @@ def expect_calcu(name, **args):
         zero_order_expect, first_order_expect, second_order_expect, square_second_order_expect, tao_expect(the quad result)
     Notes:
         if the activation has parameters, pass kwargs(the key and the value), for example: activ = my_activation('binary_zero_nonparam', s1 = 1, s2 = 2, b1 = 1)
+        I have added an argument prime_tau_cal and the calculation of prime_tau for~\cite{NTK-Dynamic}
     '''
-    if name == 'binary_zero':
-        zero_order_expect = lambda s1, s2, b1, tao_last: quad(
-            zero_order(name, **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, b1, tao_last))[0]
-        tao_expect = lambda s1, s2, b1, tao_last: quad(
-            tao(name, zero_order_expect(s1, s2, b1, tao_last), **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, b1, tao_last))[0]
-        first_order_expect = lambda s1, s2, b1, tao_last: quad(
-            first_order(name, **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, b1, tao_last))[0]
-        second_order_expect = lambda s1, s2, b1, tao_last: quad(
-            second_order(name, **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, b1, tao_last))[0]
-        square_second_order_expect = lambda s1, s2, b1, tao_last: quad(
-            square_second_order(name, zero_order_expect(s1, s2, b1, tao_last),
-                                **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, b1, tao_last),
-            epsrel=1.49e-10)[0]
+    if prime_tau_cal == False:
+        if name == 'binary_zero':
+            zero_order_expect = lambda s1, s2, b1, tao_last: quad(
+                zero_order(name, **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, b1, tao_last))[0]
+            tao_expect = lambda s1, s2, b1, tao_last: quad(
+                tao(name, zero_order_expect(s1, s2, b1, tao_last), **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, b1, tao_last))[0]
+            first_order_expect = lambda s1, s2, b1, tao_last: quad(
+                first_order(name, **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, b1, tao_last))[0]
+            second_order_expect = lambda s1, s2, b1, tao_last: quad(
+                second_order(name, **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, b1, tao_last))[0]
+            square_second_order_expect = lambda s1, s2, b1, tao_last: quad(
+                square_second_order(name, zero_order_expect(s1, s2, b1, tao_last),
+                                    **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, b1, tao_last),
+                epsrel=1.49e-10)[0]
 
-    elif name == 'binary_last':
-        zero_order_expect = lambda s1, s2, s3, s4, b1, b2, b3, tao_last: quad(
-            zero_order(name, **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, s3, s4, b1, b2, b3, tao_last))[0]
-        tao_expect = lambda s1, s2, s3, s4, b1, b2, b3, tao_last: quad(
-            tao(name, zero_order_expect(s1, s2, s3, s4, b1, b2, b3, tao_last),
-                **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, s3, s4, b1, b2, b3, tao_last))[0]
-        first_order_expect = lambda s1, s2, s3, s4, b1, b2, b3, tao_last: quad(
-            first_order(name, **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, s3, s4, b1, b2, b3, tao_last))[0]
-        second_order_expect = lambda s1, s2, s3, s4, b1, b2, b3, tao_last: quad(
-            second_order(name, **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, s3, s4, b1, b2, b3, tao_last))[0]
-        square_second_order_expect = lambda s1, s2, s3, s4, b1, b2, b3, tao_last: quad(
-            square_second_order(
-                name, zero_order_expect(s1, s2, s3, s4, b1, b2, b3, tao_last),
-                **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, s3, s4, b1, b2, b3, tao_last),
-            epsrel=1.49e-10)[0]
+        elif name == 'binary_last':
+            zero_order_expect = lambda s1, s2, s3, s4, b1, b2, b3, tao_last: quad(
+                zero_order(name, **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, s3, s4, b1, b2, b3, tao_last))[0]
+            tao_expect = lambda s1, s2, s3, s4, b1, b2, b3, tao_last: quad(
+                tao(name, zero_order_expect(s1, s2, s3, s4, b1, b2, b3, tao_last),
+                    **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, s3, s4, b1, b2, b3, tao_last))[0]
+            first_order_expect = lambda s1, s2, s3, s4, b1, b2, b3, tao_last: quad(
+                first_order(name, **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, s3, s4, b1, b2, b3, tao_last))[0]
+            second_order_expect = lambda s1, s2, s3, s4, b1, b2, b3, tao_last: quad(
+                second_order(name, **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, s3, s4, b1, b2, b3, tao_last))[0]
+            square_second_order_expect = lambda s1, s2, s3, s4, b1, b2, b3, tao_last: quad(
+                square_second_order(
+                    name, zero_order_expect(s1, s2, s3, s4, b1, b2, b3, tao_last),
+                    **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, s3, s4, b1, b2, b3, tao_last),
+                epsrel=1.49e-10)[0]
 
-    elif name == 'binary_last_final':
-        zero_order_expect = lambda s1, s2, b1, b2, b3, tao_last: quad(
-            zero_order(name, **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, b1, b2, b3, tao_last))[0]
-        tao_expect = lambda s1, s2, b1, b2, b3, tao_last: quad(
-            tao(name, zero_order_expect(s1, s2, b1, b2, b3, tao_last), **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, b1, b2, b3, tao_last))[0]
-        first_order_expect = lambda s1, s2, b1, b2, b3, tao_last: quad(
-            first_order(name, **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, b1, b2, b3, tao_last))[0]
-        second_order_expect = lambda s1, s2, b1, b2, b3, tao_last: quad(
-            second_order(name, **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, b1, b2, b3, tao_last))[0]
-        square_second_order_expect = lambda s1, s2, b1, b2, b3, tao_last: quad(
-            square_second_order(
-                name, zero_order_expect(s1, s2, b1, b2, b3, tao_last), **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, b1, b2, b3, tao_last),
-            epsrel=1.49e-10)[0]
+        elif name == 'binary_last_final':
+            zero_order_expect = lambda s1, s2, b1, b2, b3, tao_last: quad(
+                zero_order(name, **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, b1, b2, b3, tao_last))[0]
+            tao_expect = lambda s1, s2, b1, b2, b3, tao_last: quad(
+                tao(name, zero_order_expect(s1, s2, b1, b2, b3, tao_last), **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, b1, b2, b3, tao_last))[0]
+            first_order_expect = lambda s1, s2, b1, b2, b3, tao_last: quad(
+                first_order(name, **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, b1, b2, b3, tao_last))[0]
+            second_order_expect = lambda s1, s2, b1, b2, b3, tao_last: quad(
+                second_order(name, **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, b1, b2, b3, tao_last))[0]
+            square_second_order_expect = lambda s1, s2, b1, b2, b3, tao_last: quad(
+                square_second_order(
+                    name, zero_order_expect(s1, s2, b1, b2, b3, tao_last), **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, b1, b2, b3, tao_last),
+                epsrel=1.49e-10)[0]
 
-    elif name == 'binary_last_four':
-        zero_order_expect = lambda s1, s2, s3, s4, b1, b2, tao_last: quad(
-            zero_order(name, **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, s3, s4, b1, b2, tao_last))[0]
-        tao_expect = lambda s1, s2, s3, s4, b1, b2, tao_last: quad(
-            tao(name, zero_order_expect(s1, s2, s3, s4, b1, b2, tao_last), **
-                args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, s3, s4, b1, b2, tao_last))[0]
-        first_order_expect = lambda s1, s2, s3, s4, b1, b2, tao_last: quad(
-            first_order(name, **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, s3, s4, b1, b2, tao_last))[0]
-        second_order_expect = lambda s1, s2, s3, s4, b1, b2, tao_last: quad(
-            second_order(name, **args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, s3, s4, b1, b2, tao_last))[0]
-        square_second_order_expect = lambda s1, s2, s3, s4, b1, b2, tao_last: quad(
-            square_second_order(
-                name, zero_order_expect(s1, s2, s3, s4, b1, b2, tao_last), **
-                args),
-            -np.inf,
-            np.inf,
-            args=(s1, s2, s3, s4, b1, b2, tao_last),
-            epsrel=1.49e-10)[0]
+        elif name == 'binary_last_four':
+            zero_order_expect = lambda s1, s2, s3, s4, b1, b2, tao_last: quad(
+                zero_order(name, **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, s3, s4, b1, b2, tao_last))[0]
+            tao_expect = lambda s1, s2, s3, s4, b1, b2, tao_last: quad(
+                tao(name, zero_order_expect(s1, s2, s3, s4, b1, b2, tao_last), **
+                    args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, s3, s4, b1, b2, tao_last))[0]
+            first_order_expect = lambda s1, s2, s3, s4, b1, b2, tao_last: quad(
+                first_order(name, **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, s3, s4, b1, b2, tao_last))[0]
+            second_order_expect = lambda s1, s2, s3, s4, b1, b2, tao_last: quad(
+                second_order(name, **args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, s3, s4, b1, b2, tao_last))[0]
+            square_second_order_expect = lambda s1, s2, s3, s4, b1, b2, tao_last: quad(
+                square_second_order(
+                    name, zero_order_expect(s1, s2, s3, s4, b1, b2, tao_last), **
+                    args),
+                -np.inf,
+                np.inf,
+                args=(s1, s2, s3, s4, b1, b2, tao_last),
+                epsrel=1.49e-10)[0]
+        else:
+            zero_order_expect = lambda tao_last: quad(zero_order(name, **args),
+                                                    -np.inf,
+                                                    np.inf,
+                                                    args=(tao_last),
+                                                    limit=1000)[0]
+            tao_expect = lambda tao_last: quad(tao(name, zero_order_expect(
+                tao_last), **args),
+                                            -np.inf,
+                                            np.inf,
+                                            args=(tao_last),
+                                            limit=1000)[0]
+            first_order_expect = lambda tao_last: quad(first_order(name, **args),
+                                                    -np.inf,
+                                                    np.inf,
+                                                    args=(tao_last),
+                                                    limit=1000)[0]
+            second_order_expect = lambda tao_last: quad(second_order(name, **args),
+                                                        -np.inf,
+                                                        np.inf,
+                                                        args=(tao_last),
+                                                        limit=1000)[0]
+            square_second_order_expect = lambda tao_last: quad(square_second_order(
+                name, zero_order_expect(tao_last), **args),
+                                                            -np.inf,
+                                                            np.inf,
+                                                            limit=1000,
+                                                            args=(tao_last),
+                                                            epsrel=1.49e-10)[0]
+
+        return zero_order_expect, first_order_expect, second_order_expect, square_second_order_expect, tao_expect
     else:
         zero_order_expect = lambda tao_last: quad(zero_order(name, **args),
-                                                  -np.inf,
-                                                  np.inf,
-                                                  args=(tao_last),
-                                                  limit=1000)[0]
+                                                -np.inf,
+                                                np.inf,
+                                                args=(tao_last),
+                                                limit=1000)[0]
         tao_expect = lambda tao_last: quad(tao(name, zero_order_expect(
             tao_last), **args),
-                                           -np.inf,
-                                           np.inf,
-                                           args=(tao_last),
-                                           limit=1000)[0]
+                                        -np.inf,
+                                        np.inf,
+                                        args=(tao_last),
+                                        limit=1000)[0]
         first_order_expect = lambda tao_last: quad(first_order(name, **args),
-                                                   -np.inf,
-                                                   np.inf,
-                                                   args=(tao_last),
-                                                   limit=1000)[0]
+                                                -np.inf,
+                                                np.inf,
+                                                args=(tao_last),
+                                                limit=1000)[0]
         second_order_expect = lambda tao_last: quad(second_order(name, **args),
                                                     -np.inf,
                                                     np.inf,
@@ -352,23 +400,42 @@ def expect_calcu(name, **args):
                                                     limit=1000)[0]
         square_second_order_expect = lambda tao_last: quad(square_second_order(
             name, zero_order_expect(tao_last), **args),
-                                                           -np.inf,
-                                                           np.inf,
-                                                           limit=1000,
-                                                           args=(tao_last),
-                                                           epsrel=1.49e-10)[0]
-
-    return zero_order_expect, first_order_expect, second_order_expect, square_second_order_expect, tao_expect
-
+                                                        -np.inf,
+                                                        np.inf,
+                                                        limit=1000,
+                                                        args=(tao_last),
+                                                        epsrel=1.49e-10)[0]
+        prime_tau_expect = lambda tao_last: quad(prime_tau(name, **args),
+                                           -np.inf,
+                                           np.inf,
+                                           args=(tao_last),
+                                           limit=3000)[0]
+        return zero_order_expect, first_order_expect, second_order_expect, square_second_order_expect, tao_expect, prime_tau_expect
 
 if __name__ == "__main__":
     # a simple implemention, you can change activation name and corresponding parameters at will.
-    zero_order_expect, first_order_expect, second_order_expect, square_second_order_expect, tao_expect =\
-        expect_calcu('binary_last_four')
-    s1, s2, s3, s4, b1, b2, tao_last = 1, 2, 3, 4, 1, 2, 3
+    zero_order_expect, first_order_expect, second_order_expect, square_second_order_expect, tao_expect, prime_tau_expect =\
+        expect_calcu('Sin', prime_tau_cal = True)
+    tao_last = 1
+    print(zero_order_expect(tao_last),
+          first_order_expect( tao_last),
+          second_order_expect(tao_last),
+          square_second_order_expect(tao_last),
+          tao_expect(tao_last),
+          prime_tau_expect(tao_last))
+    print(quad(lambda x : np.cos(x) * np.cos(x) * stats.norm.pdf(x) ,
+                                           -np.inf,
+                                           np.inf,
+                                           limit=3000)[0])
+    print(quad(lambda x : np.sin(x) * np.sin(x) * stats.norm.pdf(x) ,
+                                           -np.inf,
+                                           np.inf,
+                                           limit=3000)[0])
 
-    print(zero_order_expect(s1, s2, s3, s4, b1, b2, tao_last),
-          first_order_expect(s1, s2, s3, s4, b1, b2, tao_last),
-          second_order_expect(s1, s2, s3, s4, b1, b2, tao_last),
-          square_second_order_expect(s1, s2, s3, s4, b1, b2, tao_last),
-          tao_expect(s1, s2, s3, s4, b1, b2, tao_last))
+    # s1, s2, s3, s4, b1, b2, tao_last = 1, 2, 3, 4, 1, 2, 3
+
+    # print(zero_order_expect(s1, s2, s3, s4, b1, b2, tao_last),
+    #       first_order_expect(s1, s2, s3, s4, b1, b2, tao_last),
+    #       second_order_expect(s1, s2, s3, s4, b1, b2, tao_last),
+    #       square_second_order_expect(s1, s2, s3, s4, b1, b2, tao_last),
+    #       tao_expect(s1, s2, s3, s4, b1, b2, tao_last))

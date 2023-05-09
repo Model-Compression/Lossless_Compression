@@ -77,3 +77,4 @@ def my_activation_numpy(name, **args):
     elif name == 'Sign':
         sig = lambda x: np.sign(x)
     return sig
+

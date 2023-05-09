@@ -317,6 +317,15 @@ def my_dataset_custome(testcase,
                     np.concatenate(
                         (np.zeros(i), 4 * np.ones(1), np.zeros(p - i - 1))))
                 covs.append(np.eye(p))
+        # add a binary class data setting here for a simple analysis\cite{NTK-Dynamic}.
+        elif testcase == 'means_binary':
+            for i in range(len(cs)):
+                means.append(
+                    np.concatenate(
+                        (np.zeros(i), 4 * np.ones(1), np.zeros(p - i - 1))))
+                covs.append(np.eye(p))
+            means = means - np.mean(means, axis=0)
+            print(means)
         elif testcase == 'var':
             for i in range(len(cs)):
                 means.append(np.zeros(p))
@@ -330,7 +339,7 @@ def my_dataset_custome(testcase,
                 covs.append(np.eye(p) * (1 + 8 * i / np.sqrt(p)))
         means = np.array(means)
         covs = np.array(covs)
-        # 先获取训练和测试数据，再封装成pytorch的数据集
+        # first obtain training and test data, and then packaging them to fit the interface of pytorch
         X_train, Omega_train, Y_train, means, covs, K, p, train_T = gen_data(
             testcase,
             T=T_train,

@@ -53,7 +53,7 @@ def plot_eigen(M1, M2, setting):
     plt.figure(1)
     plt.subplot(211)
     xs = (min(min(D_Phi_c),
-              min(tilde_D_Phi_c)), max(max(tilde_D_Phi_c), max(tilde_D_Phi_c)))
+              min(tilde_D_Phi_c)), max(max(D_Phi_c), max(tilde_D_Phi_c)))
     n1, bins1, _, = plt.hist(D_Phi_c,
                              50,
                              facecolor='b',

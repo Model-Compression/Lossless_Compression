@@ -9,13 +9,12 @@ then add the codes(expressions).
 """
 
 __author__ = "Model_compression"
-__copyright__ = "Copyright 2021, Lossless compression"
-__credits__ = ["Rob Knight", "Peter Maxwell",
-               "Gavin Huttley", "Matthew Wakefield"]
+__copyright__ = "Copyright 2022, Lossless compression"
+__credits__ = ["Yongqi Du"]
 __license__ = "GPL"
 __version__ = "1.0.1"
-__maintainer__ = "Rob Knight"
-__email__ = "rob@spot.colorado.edu"
+__maintainer__ = "Yongqi"
+__email__ = "yongqi@hust.edu.cn"
 __status__ = "Development"
 __all__ = ['custome_activation_analysis',
            'custome_activation_analysis_noparam']
