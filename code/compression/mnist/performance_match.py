@@ -24,14 +24,14 @@ device = "cuda:0" if torch.cuda.is_available() else "cpu"
 if __name__ == "__main__":
     # gpu_usage()
     # ---------------------------------Data---------------------------------------------
-    cs = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+    cs = [0.1, 0.1, 0.1, 0.1, 0.1]
     K = len(cs)
     # load data
     res = my_dataset_custome('MNIST',
                              T_train=50000,
                              T_test=8000,
                              cs=cs,
-                             selected_target=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+                             selected_target=[0, 1, 2, 3, 4])
     # res = my_dataset_custome('MNIST', T_train=10000, T_test=1600, cs=cs, selected_target=[6,  8])
     dataset_train, dataset_test = res[0], res[1]
     tau_zero = np.sqrt(estim_tau_tensor(dataset_train.X))
