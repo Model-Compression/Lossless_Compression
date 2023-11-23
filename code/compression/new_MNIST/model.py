@@ -194,21 +194,12 @@ class new_act(torch.autograd.Function):
         # grad_x = 1*grad_output.clone()
         l = len(arg)
         if l == 6:
-            grad_amp1 = grad_output.clone()*sigma_torch(-arg[0], -arg[1])
-            grad_amp2 = grad_output.clone()*sigma_torch(arg[0], arg[2])
-            grad_amp3 = grad_output.clone()*((sigma_torch(-arg[0], -arg[1]) + sigma_torch(arg[0], arg[2])) - 1)
-
             s1 = torch.sign(arg[5] - arg[3])
             s2 = torch.sign(arg[4] - arg[5])
             wx = gd_f(arg[0],arg[1],arg[2])
             grad_x = wx*grad_output.clone()
             return grad_x, None, None, None, None, None
         else:
-            grad_amp1 = grad_output.clone()*sigma_torch(arg[0], arg[2])
-            grad_amp2 = grad_output.clone()*((sigma_torch(-arg[0], -arg[3]) + sigma_torch(arg[0], arg[2])) - 1)
-            grad_amp3 = grad_output.clone()*sigma_torch(arg[0], arg[4]) 
-            grad_amp4 = grad_output.clone()*((sigma_torch(-arg[0], -arg[1]) + sigma_torch(arg[0], arg[2])) - 1)
-            grad_amp5 = grad_output.clone()*((sigma_torch(-arg[0], -arg[3]) + sigma_torch(arg[0], arg[4])) - 1)
             wx = gd_l(arg[0],arg[1],arg[4])
             grad_x = wx*grad_output.clone()
             return grad_x, None, None, None, None, None, None, None, None, None
@@ -222,8 +213,8 @@ def gd_f(x,s1,s2,a1=None,a2=None):
     # ww_g = a2 * (ww+1)/2
     # ww_out = ww_d + ww_g
 
-    a1 = s1 - torch.abs(a)
-    a2 = s2 + torch.abs(a)
+    a1 = s1 + torch.abs(a)
+    a2 = s2 - torch.abs(a)
     wl = 1 + torch.sign(a1 - x)
     wr = 1 + torch.sign(x - a2)
     ww = torch.abs(wl + wr - 2)/2
@@ -238,8 +229,8 @@ def gd_l(x,s1,s2,a1=None,a2=None):
     # ww_g = a2 * (ww+1)/2
     # ww_out = ww_d + ww_g
 
-    a1 = s1 - torch.abs(a)
-    a2 = s2 + torch.abs(a)
+    a1 = s1 + torch.abs(a)
+    a2 = s2 - torch.abs(a)
     wl = 1 + torch.sign(a1 - x)
     wr = 1 + torch.sign(x - a2)
     ww = torch.abs(wl + wr - 2)/2
